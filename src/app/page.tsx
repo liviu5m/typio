@@ -1,103 +1,200 @@
-import Image from "next/image";
+"use client";
+
+import Card from "@/components/Card";
+import Header from "@/components/Header";
+import Loading from "@/components/Loading";
+import Timer from "@/components/Timer";
+import { faRefresh } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
+
+type Word = {
+  word: string;
+  status: number;
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [words, setWords] = useState<Word[]>([]);
+  const [wordId, setWordId] = useState(0);
+  const [inputWord, setInputWord] = useState("");
+  const [wordClass, setWordClass] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [start, setStart] = useState(false);
+  const [result, setResult] = useState<Word[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const wordRefs = useRef<(HTMLParagraphElement | null)[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (wordRefs.current[wordId]) {
+      wordRefs.current[wordId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "center",
+      });
+    }
+  }, [wordId]);
+  
+
+  useEffect(() => {
+    if (!start) {
+      setResult(words);
+      inputRef.current?.blur();
+      setWordId(0);
+      getWords();
+      setInputWord("");
+      setStart(false);
+      setWordClass("");
+    }
+  }, [start]);
+
+  const getWords = async () => {
+    setLoading(true);
+    const promises = [];
+    const wordsArray: { word: string; status: number }[] = [];
+
+    for (let i = 0; i < 20; i++) {
+      const randomLetter = String.fromCharCode(
+        97 + Math.floor(Math.random() * 26)
+      );
+      promises.push(
+        axios.get(
+          `https://api.datamuse.com/words?sp=${randomLetter}????*&max=20`
+        )
+      );
+    }
+
+    try {
+      const responses = await Promise.all(promises);
+
+      responses.forEach((res) => {
+        const processedWords = res.data.map((el: { word: string }) => {
+          let cleanedWord = el.word.replace(/[-\s]/g, "");
+          return { word: cleanedWord, status: 0 };
+        });
+
+        // Filter words with at least 5 letters
+        const filteredWords = processedWords.filter(
+          (w: { word: string }) => w.word.length >= 5
+        );
+
+        wordsArray.push(...filteredWords);
+      });
+
+      // Shuffle the array
+      const shuffledArray = shuffleArray(wordsArray);
+
+      // Pick exactly 200 words
+      const selectedWords = shuffledArray.slice(0, 200);
+
+      setWords(selectedWords);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const shuffleArray = (array: any[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  const check = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!start) setStart(true);
+    setInputWord(e.currentTarget.value);
+    let text = e.currentTarget.value;
+
+    if (e.currentTarget.value.split(" ").length > 1) {
+      setWords(
+        words.map((word, i) => {
+          if (i == wordId)
+            return {
+              ...word,
+              status:
+                words[wordId].word.slice(0, text.length).trim() == text.trim()
+                  ? 1
+                  : -1,
+            };
+          return { ...word };
+        })
+      );
+      setWordClass("");
+      setWordId(wordId + 1);
+      setInputWord("");
+    } else {
+      if (words[wordId].word.slice(0, text.length) != text)
+        setWordClass("bg-red-500");
+      else setWordClass("");
+    }
+  };
+
+  useEffect(() => {
+    getWords();
+  }, []);
+  
+
+  return loading ? (
+    <Loading />
+  ) : (
+    <div className="w-full flex items-center justify-center">
+      <div className="container">
+        <Header />
+        <div className="flex items-center justify-center flex-col">
+          <div className="bg-white rounded-2xl w-full text-black flex  gap-2 p-4 text-xl overflow-scroll element">
+            {words.map((word, i) => {
+              return (
+                <p
+                  ref={(el) => {
+                    wordRefs.current[i] = el;
+                  }}
+                  className={`${
+                    word.status == -1
+                      ? "text-red-500"
+                      : word.status == 1
+                      ? "text-green-500"
+                      : ""
+                  } ${
+                    wordId == i ? "bg-gray-300 " + wordClass : ""
+                  } px-2 py-2 rounded-lg`}
+                  key={i}
+                >
+                  {word.word}
+                </p>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-center w-3/4 mt-10 gap-5">
+            <input
+              ref={inputRef}
+              type="text"
+              className="w-full p-5 text-xl outline-none text-white rounded-lg bg-[#00ADB5]"
+              onChange={(e) => check(e)}
+              value={inputWord}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <Timer start={start} setStart={setStart} />
+            <button
+              className="bg-[#eee] text-[#00ADB5] rounded-lg text-xl p-4 cursor-pointer hover:bg-[#00ADB5] hover:text-[#eee]"
+              onClick={() => {
+                setResult(words);
+                setWordId(0);
+                getWords();
+                setInputWord("");
+                setStart(false);
+                setWordClass("");
+              }}
+            >
+              <FontAwesomeIcon icon={faRefresh} />
+            </button>
+          </div>
+          {result.filter(el => el.status != 0).length != 0 && <Card words={result} />}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
 }
