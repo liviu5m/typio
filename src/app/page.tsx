@@ -145,7 +145,7 @@ export default function Home() {
     <div className="w-full flex items-center justify-center">
       <div className="container">
         <Header />
-        <div className="flex items-center justify-center flex-col">
+        <div className="flex items-center justify-center flex-col mt-20">
           <div className="bg-white rounded-2xl w-full text-black flex  gap-2 p-4 text-xl overflow-scroll element">
             {words.map((word, i) => {
               return (

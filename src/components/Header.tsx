@@ -4,30 +4,54 @@ import { useAppContext } from "@/lib/AppContext";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import Loading from "./Loading";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const { user } = useAppContext();
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
-    if(user) setLoading(false);
+    if (user) setLoading(false);
     else setLoading(false);
   }, [user]);
 
-  return loading ? <Loading /> : (
+  return loading ? (
+    <Loading />
+  ) : (
     <header className="flex items-center py-5 justify-between">
-      <h1 className="text-3xl font-bold">Typio</h1>
+      <Link href={"/"} className="text-3xl font-bold">Typio</Link>
       <ul className="flex items-center justify-center gap-10">
-        <Link href={"/"} className="hover:text-[#00ADB5]">
+        <Link
+          href={"/"}
+          className={`hover:text-[#00ADB5] ${
+            pathname == "/" ? "text-[#00ADB5]" : ""
+          }`}
+        >
           Home
         </Link>
-        <Link href={"/leaderboard"} className="hover:text-[#00ADB5]">
+        <Link
+          href={"/leaderboard"}
+          className={`hover:text-[#00ADB5] ${
+            pathname == "/leaderboard" ? "text-[#00ADB5]" : ""
+          }`}
+        >
           Leaderboard
         </Link>
-        <Link href={"/about"} className="hover:text-[#00ADB5]">
+        <Link
+          href={"/about"}
+          className={`hover:text-[#00ADB5] ${
+            pathname == "/about" ? "text-[#00ADB5]" : ""
+          }`}
+        >
           About us
         </Link>
-        <Link href={"/contact"} className="hover:text-[#00ADB5]">
+        <Link
+          href={"/contact"}
+          className={`hover:text-[#00ADB5] ${
+            pathname == "/contact" ? "text-[#00ADB5]" : ""
+          }`}
+        >
           Contact Us
         </Link>
       </ul>

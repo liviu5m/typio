@@ -53,19 +53,19 @@ export default async function Leaderboard() {
         <table className="border-collapse border border-[#eee] table-auto w-full">
           <thead>
             <tr>
-              <th className="border border-[#eee] text-[#00ADB5] p-4 w-1/3">
+              <th className="border border-[#eee] text-[#eee] bg-[#00ADB5] p-4 w-1/3">
                 Username
               </th>
-              <th className="border border-[#eee] text-[#00ADB5] w-1/3">
+              <th className="border border-[#eee] text-[#eee] bg-[#00ADB5] w-1/3">
                 Words Number
               </th>
-              <th className="border border-[#eee] text-[#00ADB5] w-1/3">
+              <th className="border border-[#eee] text-[#eee] bg-[#00ADB5] w-1/3">
                 Date
               </th>
             </tr>
           </thead>
           <tbody>
-            {records.map((record, i) => {
+            {uniqueRecords.map((record, i) => {
               return (
                 <tr key={i}>
                   <td className="border border-[#eee] p-4 text-center">

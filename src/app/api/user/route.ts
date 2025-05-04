@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get("userId") || "";
   const email = searchParams.get("email") || "";
   const password = searchParams.get("password") || "";
+  const type = searchParams.get("type") || "";
 
   try {
     if (userId) {
@@ -94,5 +95,40 @@ export async function POST(request: NextRequest) {
       { error: "Something went wrong." },
       { status: 500 }
     );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const { userId, password, passwordConfirmation, newPassword } =
+      await request.json();
+
+    const user = await prisma.user.findFirst({
+      where: {
+        id: parseInt(userId),
+      },
+    });
+
+    if (password != passwordConfirmation)
+      return NextResponse.json(
+        { error: "Passwords does not match." },
+        { status: 500 }
+      );
+
+    if (user && (await bcrypt.compare(password, user?.password))) {
+      const user = await prisma.user.update({
+        where: {
+          id: parseInt(userId),
+        },
+        data: {
+          password: await bcrypt.hash(newPassword, 10),
+        },
+      });
+      return NextResponse.json(user);
+    } else {
+      return NextResponse.json({ err: "Password is wrong." }, { status: 500 });
+    }
+  } catch (err) {
+    return NextResponse.json({ err: err }, { status: 500 });
   }
 }
